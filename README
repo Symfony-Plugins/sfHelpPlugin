@@ -1,0 +1,16 @@
+== sfHelpPlugin ==
+
+Provides an api help through the cli
+
+=== Usage ===
+
+   symfony api:help sfForm
+   symfony api:help sfForm::bind
+   symfony api:help url_for
+
+== TODO ==
+
+ * functions help
+ * refactoring
+ * unit tests
+ * improve doc block parser
