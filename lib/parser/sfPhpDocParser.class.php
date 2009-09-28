@@ -1,17 +1,37 @@
 <?php
 
+/**
+ * sfPhpDocParser is a tool to parse doc block comments of functions and classes
+ *
+ * @package     sfHelpPlugin
+ * @subpackage  parser
+ * @author      Noël GUILBERT <noelguilbert@gmail.com>
+ * @version     SVN: $Id: sfPhpDocParser.class.php
+ */
 class sfPhpDocParser
 {
   protected
     $shortDescription,
     $longDescription,
     $params = array(),
-    $author,
+    $authors = array(),
     $return,
     $licence,
     $link,
     $todo;
 
+  public function __construct($docBlock)
+  {
+    $this->parse($docBlock);
+  }
+
+  /**
+   * Parses the given doc block
+   *
+   * The annotations @param, @author, @return and the descriptions (short and long) will be parsed
+   *
+   * @param string docBlock
+   */
   public function parse($docBlock)
   {
     $lines = $this->cleanupDocBlock($docBlock);
@@ -36,10 +56,10 @@ class sfPhpDocParser
           'description' => $match[2]
         );
       }
-      // TODO author
-      // TODO licence
-      // TODO link
-      // TODO see
+      elseif(preg_match('/@author\s+(.*)/', $line, $match))
+      {
+        $this->authors[] = $match[1];
+      }
       elseif (!preg_match('/@\w+/', $line))
       {
         if (is_null($this->shortDescription))
@@ -54,40 +74,88 @@ class sfPhpDocParser
     }
   }
 
+  /**
+   * Returns the short description
+   *
+   * @return string
+   */
   public function getShortDescription()
   {
     return $this->shortDescription;
   }
 
+  /**
+   * Returns the long description
+   *
+   * @return string
+   */
   public function getLongDescription()
   {
     return $this->longDescription;
   }
 
-  public function getParams()
+  /**
+   * Returns the function or method parameters
+   *
+   * @param  array $params Array of ReflectionParameters
+   * @return array Array of parameters
+   */
+  public function getParams($params = array())
   {
+    if (count($params))
+    {
+      foreach ($params as $reflectionParam)
+      {
+        if (!isset($this->params['$'.$reflectionParam->getName()]))
+        {
+          $param = array('$'.$reflectionParam->getName() => array('type' => '', 'description' => ''));
+          $this->params = array_merge($this->params, $param);
+        }
+      }
+    }
+
     return $this->params;
   }
 
+  /**
+   * Returns the @return parameter
+   *
+   * @return array 
+   */ 
   public function getReturn()
   {
     return $this->return;
   }
 
+  /**
+   * Returns the authors
+   *
+   * @return array
+   */
+  public function getAuthors()
+  {
+    return $this->authors;
+  }
+
+  /**
+   * Clean the given doc block
+   *
+   * @param  string $docBlock
+   * @return string
+   */
   protected function cleanupDocBlock($docBlock)
   {
     $docBlock = preg_replace(
       array(
-        '#\s*/\*\*\s*#', # doc start /**
-        '#\s*\*/\s*#',   # doc end */
-        '#\s*\*#',       # doc line *
+        '#^\s*/\*\*\s*#', # doc start /**
+        '#^\s*\*/\s*#',   # doc end */
+        '#^\s*\*\s?#',    # doc line *
+        '#\s*$#'          # trim spaces
       ),
       '',
       split("\n", $docBlock)
     );
 
-    return array_map('trim', $docBlock);
+    return $docBlock;
   }
-
-  
 }
